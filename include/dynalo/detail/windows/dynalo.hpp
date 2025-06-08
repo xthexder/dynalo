@@ -28,12 +28,16 @@ std::string last_error()
     LPVOID lpDisplayBuf = (LPVOID)::LocalAlloc(LMEM_ZEROINIT,
         (::lstrlen((LPCTSTR)lpMsgBuf) + 40) * sizeof(TCHAR));
 
+    size_t strLength = ::LocalSize(lpDisplayBuf) / sizeof(TCHAR);
     ::StringCchPrintf((LPTSTR)lpDisplayBuf,
-        ::LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        strLength,
         TEXT("Failed with error %d: %s"),
         dw, lpMsgBuf);
 
-    std::string err_str((LPCTSTR)lpDisplayBuf);
+    // ConvertWideToUtf8
+    int count = WideCharToMultiByte(CP_UTF8, 0, (LPCTSTR)lpDisplayBuf, strLength, NULL, 0, NULL, NULL);
+    std::string err_str(count, 0);
+    WideCharToMultiByte(CP_UTF8, 0, (LPCTSTR)lpDisplayBuf, -1, err_str.data(), count, NULL, NULL);
 
     ::LocalFree(lpMsgBuf);
     ::LocalFree(lpDisplayBuf);
@@ -63,7 +67,12 @@ inline std::string extension() { return std::string("dll"); }
 inline
 native::handle open(const std::string& dyn_lib_path)
 {
-    native::handle lib_handle = ::LoadLibrary(dyn_lib_path.c_str());
+    // ConvertUtf8ToWide
+    int count = MultiByteToWideChar(CP_UTF8, 0, dyn_lib_path.c_str(), dyn_lib_path.length(), NULL, 0);
+    std::wstring wstr(count, 0);
+    MultiByteToWideChar(CP_UTF8, 0, dyn_lib_path.c_str(), dyn_lib_path.length(), wstr.data(), count);
+
+    native::handle lib_handle = ::LoadLibrary(wstr.c_str());
     if (lib_handle == nullptr)
     {
         throw std::runtime_error(std::string("Failed to open [dyn_lib_path:") + dyn_lib_path + "]: " + last_error());
@@ -87,10 +96,6 @@ inline
 FunctionSignature* get_function(native::handle lib_handle, const std::string& func_name)
 {
     FARPROC func_ptr = ::GetProcAddress(lib_handle, func_name.c_str());
-    if (func_ptr == nullptr)
-    {
-        throw std::runtime_error(std::string("Failed to get [func_name:") + func_name + "]: " + last_error());
-    }
 
     return reinterpret_cast<FunctionSignature*>(func_ptr);
 }
