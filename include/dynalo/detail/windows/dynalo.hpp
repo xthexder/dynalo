@@ -72,13 +72,7 @@ native::handle open(const std::string& dyn_lib_path)
     std::wstring wstr(count, 0);
     MultiByteToWideChar(CP_UTF8, 0, dyn_lib_path.c_str(), dyn_lib_path.length(), wstr.data(), count);
 
-    native::handle lib_handle = ::LoadLibrary(wstr.c_str());
-    if (lib_handle == nullptr)
-    {
-        throw std::runtime_error(std::string("Failed to open [dyn_lib_path:") + dyn_lib_path + "]: " + last_error());
-    }
-
-    return lib_handle;
+    return ::LoadLibrary(wstr.c_str());
 }
 
 inline

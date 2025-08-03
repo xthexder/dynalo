@@ -78,9 +78,8 @@ std::string to_native_name(const std::string& lib_name)
 ///
 /// @param dyn_lib_path Path to the shared library file to be loaded
 ///
-/// @return The handle of the loaded shared library
-///
-/// @throw std::runtime_error If it fails to load the library
+/// @return The handle of the loaded shared library, or invalid_handle if it fails to load the library
+///         If an error occurred, the error message is accessible using last_error()
 inline
 native::handle open(const std::string& dyn_lib_path)
 {
@@ -107,9 +106,7 @@ void close(native::handle lib_handle)
 /// @param lib_handle The handle of the library that contains the function
 /// @param func_name  The name of the function to find
 ///
-/// @return A pointer to the @p func_name function
-///
-/// @throw std::runtime_error If it fails to find the @p func_name function
+/// @return A pointer to the @p func_name function, or null if it fails to find the @p func_name function
 template <typename FunctionSignature>
 inline
 FunctionSignature* get_function(native::handle lib_handle, const std::string& func_name)
